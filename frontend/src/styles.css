@@ -1515,6 +1515,24 @@ select {
   box-shadow: 0 0 0 3px rgba(111, 158, 122, .2)
 }
 
+/* SYSTEM STATUS card sits on the dark cinematic panel (Overview page),
+   so it needs the dark-theme text tokens instead of the light --text/--muted
+   pair — otherwise the row labels and status values render as dark grey
+   on a dark navy card and become unreadable. */
+.cinematic-panel .status-row {
+  color: var(--text-soft);
+  font-size: 10px;
+}
+
+.cinematic-panel .status-row svg {
+  color: var(--text-muted);
+}
+
+.cinematic-panel .status-row strong {
+  color: var(--text-main);
+  font-size: 10px;
+}
+
 .alerts-panel {
   min-height: 323px
 }
@@ -1897,7 +1915,10 @@ select {
 }
 
 .battery-summary {
-  padding-bottom: 16px
+  padding-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .battery-percent {
@@ -1928,32 +1949,38 @@ select {
   background: linear-gradient(90deg, var(--accent2), var(--accent))
 }
 
+/* Each metric gets its own bordered, padded box, and the grid grows to
+   fill the remaining card height so BATTERY HEALTH balances visually
+   against BATTERY DISPATCH PROFILE beside it instead of leaving a gap. */
 .battery-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  padding: 8px 17px;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line)
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 14px 17px 17px;
+  flex: 1;
 }
 
 .battery-stats div {
-  padding: 0 8px
-}
-
-.battery-stats div+div {
-  border-left: 1px solid var(--line)
+  padding: 16px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg2);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
 }
 
 .battery-stats span {
   display: block;
-  font-size: 7px;
+  font-size: 11px;
+  letter-spacing: .04em;
   color: var(--muted)
 }
 
 .battery-stats strong {
   display: block;
-  font-size: 10px;
-  margin-top: 5px;
+  font-size: 20px;
   color: var(--text)
 }
 
@@ -2024,6 +2051,10 @@ select {
 
 .timeline-dot.info {
   background: #4E5D94
+}
+
+.timeline-dot.danger {
+  background: var(--bad, #C9534B)
 }
 
 .timeline-row strong {
@@ -3635,21 +3666,58 @@ body {
 }
 
 .cinematic-segmented {
-  background: rgba(2, 7, 19, .45);
-  border: 1px solid rgba(175, 201, 255, .09);
   padding: 3px;
   border-radius: 11px;
 }
 
 .cinematic-segmented button {
-  color: #8490aa;
   border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 6px 10px;
+  transition: .15s ease;
 }
 
-.cinematic-segmented button.selected {
+/* Dark context — Overview's cinematic panels and control bar. */
+.cinematic-panel .cinematic-segmented,
+.control-bar .cinematic-segmented {
+  background: rgba(2, 7, 19, .45);
+  border: 1px solid rgba(175, 201, 255, .09);
+}
+
+.cinematic-panel .cinematic-segmented button,
+.control-bar .cinematic-segmented button {
+  color: #aab5d6;
+  border-color: rgba(175, 201, 255, .16);
+}
+
+.cinematic-panel .cinematic-segmented button.selected,
+.control-bar .cinematic-segmented button.selected {
   color: #f6f8ff;
-  background: linear-gradient(135deg, rgba(131, 82, 255, .42), rgba(45, 198, 220, .24));
+  background: linear-gradient(135deg, rgba(131, 82, 255, .55), rgba(45, 198, 220, .34));
+  border-color: rgba(216, 223, 255, .3);
   box-shadow: 0 5px 18px rgba(85, 58, 210, .20);
+}
+
+/* Light context — module pages (e.g. the Forecasting page's Renewable
+   Forecast toggle), which sit on a warm-panel card. The dark-glass
+   treatment above composites into a mid-grey box on a light card, and
+   the muted blue-grey label all but disappears against it — this gives
+   the toggle its own light-appropriate look instead. */
+.warm-panel .cinematic-segmented {
+  background: rgba(38, 48, 44, .05);
+  border: 1px solid rgba(77, 70, 98, .16);
+}
+
+.warm-panel .cinematic-segmented button {
+  color: var(--muted, #747286);
+  border-color: rgba(77, 70, 98, .14);
+}
+
+.warm-panel .cinematic-segmented button.selected {
+  color: #2B3157;
+  background: linear-gradient(135deg, rgba(131, 82, 255, .20), rgba(45, 198, 220, .18));
+  border-color: rgba(131, 82, 255, .35);
+  box-shadow: 0 3px 10px rgba(85, 58, 210, .12);
 }
 
 .aurora-run-btn {
@@ -8094,6 +8162,159 @@ body {
 
 .alert-card p {
   color: #64748B !important;
+}
+
+/* ==========================================================================
+   ALERTS & EVENTS PAGE — REVAMPED LAYOUT
+   Scoped to .alerts-page so the Overview page's STATION EVENTS panel
+   (which reuses the same AlertCard component) is left untouched.
+   ========================================================================== */
+
+/* Severity-colored left border + tinted background per card, matching the
+   same palette used by SYSTEM MODE (--warn/--bad/--info). Specificity beats
+   the !important base rule above without needing !important everywhere. */
+.alerts-page .alert-card {
+  border-left: 4px solid var(--line) !important;
+  align-items: flex-start;
+}
+
+.alerts-page .alert-card.danger {
+  border-left-color: var(--bad) !important;
+  background: #FDECEA !important;
+}
+
+.alerts-page .alert-card.warning {
+  border-left-color: var(--warn) !important;
+  background: #FBF1E7 !important;
+}
+
+.alerts-page .alert-card.info {
+  border-left-color: var(--info) !important;
+  background: #F2F1FA !important;
+}
+
+.alerts-page .alert-card.danger .alert-icon {
+  background: rgba(201, 83, 75, .16);
+  color: var(--bad);
+}
+
+.alerts-page .alert-card.warning .alert-icon {
+  background: rgba(217, 135, 75, .18);
+  color: var(--warn);
+}
+
+.alerts-page .alert-card.info .alert-icon {
+  background: rgba(78, 93, 148, .14);
+  color: var(--info);
+}
+
+/* Filter chips (All / Critical / Warning / Info) in the panel header */
+.alert-filter-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.alert-filter-chips button {
+  padding: 5px 11px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  border-radius: 999px;
+  border: 1px solid rgba(77, 70, 98, .16);
+  background: transparent;
+  color: var(--muted, #747286);
+  cursor: pointer;
+  transition: .15s ease;
+}
+
+.alert-filter-chips button:hover {
+  border-color: rgba(112, 86, 200, .35);
+}
+
+.alert-filter-chips button.selected {
+  background: rgba(112, 86, 200, .12);
+  border-color: rgba(112, 86, 200, .4);
+  color: #7056C8;
+}
+
+/* Empty state for the alerts list */
+.alerts-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted, #747286);
+}
+
+.alerts-empty-state svg {
+  color: #6E9273;
+}
+
+.alerts-empty-state strong {
+  color: var(--ink, #26253a);
+  font-size: 13px;
+}
+
+.alerts-empty-state span {
+  font-size: 12px;
+}
+
+.timeline-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted, #747286);
+}
+
+.timeline-empty svg {
+  color: #6E9273;
+}
+
+/* Live monitoring radar, now a normal card in the grid instead of a
+   full-width decorative band. */
+.alerts-monitor-row {
+  margin-bottom: 20px;
+}
+
+.monitor-card-body {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 6px 20px 22px;
+}
+
+.monitor-card-body .radar {
+  width: 92px;
+  height: 92px;
+  flex: none;
+}
+
+.monitor-card-body .radar-status {
+  font-size: 11px;
+  color: var(--muted, #747286);
+  gap: 10px;
+}
+
+.monitor-card-body .radar-status span:last-child {
+  font-weight: 700;
+  color: var(--ink, #26253a);
+  font-size: 14px;
+}
+
+/* Equal-height two-column grid for Active Station Alerts / Event Timeline */
+.alerts-main-grid {
+  align-items: stretch;
+}
+
+.alerts-list-panel {
+  display: flex;
+  flex-direction: column;
 }
 
 /* ==========================================================================

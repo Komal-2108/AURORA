@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Activity, ArrowDown, BarChart3, BatteryCharging, Bell, BrainCircuit,
   CloudSun, Database, Download, Gauge, GitBranch, Leaf, Server, Settings,
@@ -66,7 +66,7 @@ const Timeline = ({ alerts }) => {
     ? alerts.map(a => [
       a.timestamp || 'Recent',
       a.title,
-      a.severity === 'danger' ? 'warning' : (a.severity === 'warning' ? 'warning' : 'info')
+      a.severity === 'danger' ? 'danger' : (a.severity === 'warning' ? 'warning' : 'info')
     ])
     : [
       ['10:15', 'Fuel alert raised', 'warning'],
@@ -76,10 +76,15 @@ const Timeline = ({ alerts }) => {
       ['08:30', 'Battery reserve recalculated', 'success']
     ];
   return <div className="timeline warm-timeline">
-    {items.map(([time, title, kind], i) => <div className="timeline-row" key={time + title + i} style={{ animationDelay: `${i * .09}s` }}>
+    {items.length > 0 ? items.map(([time, title, kind], i) => <div className="timeline-row" key={time + title + i} style={{ animationDelay: `${i * .09}s` }}>
       <span className="timeline-time">{time}</span><i className={`timeline-dot ${kind}`} />
       <div><strong>{title}</strong><span>Station event</span></div>
-    </div>)}
+    </div>) : (
+      <div className="timeline-empty">
+        <ShieldCheck size={22} />
+        <span>No station events logged yet.</span>
+      </div>
+    )}
   </div>;
 };
 
@@ -259,8 +264,8 @@ export function Optimization({ optimizationResult, onRunOptimization, running, s
       <PanelHeader title="OPTIMIZER RECOMMENDATIONS" subtitle="Actions synthesized from decision model" icon={<BrainCircuit size={16} />} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px 18px' }}>
         {recommendations.map((rec, idx) => (
-          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#cde2f2' }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#68dcff' }} />
+          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', lineHeight: 1.6, color: 'var(--ink)' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#68dcff', flex: 'none' }} />
             {rec}
           </div>
         ))}
@@ -439,11 +444,22 @@ export function Reports({ dashboard, optimizationResult, history }) {
   </ModuleWrap>;
 }
 
+const ALERT_FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'danger', label: 'Critical' },
+  { key: 'warning', label: 'Warning' },
+  { key: 'info', label: 'Info' }
+];
+
 export function Alerts({ alerts, setToast, refreshAlerts }) {
+  const [filter, setFilter] = useState('all');
+
   const alertList = alerts?.length ? alerts : [
     { id: "fuel-efficiency", severity: "warning", title: "High fuel consumption", body: "Generator dispatch is above modeled efficiency band.", timestamp: "10:15 AM", action: "Shift flexible load" },
     { id: "polar-night", severity: "info", title: "Polar night approaching", body: "Solar contribution is expected to decline over the coming period.", timestamp: "09:40 AM", action: "Increase wind utilization" }
   ];
+
+  const filteredAlerts = filter === 'all' ? alertList : alertList.filter(a => a.severity === filter);
 
   return <ModuleWrap page="alerts-page">
     <PageHero eyebrow="EVENT AWARENESS SYSTEM" title="Alerts & Events"
@@ -456,32 +472,57 @@ export function Alerts({ alerts, setToast, refreshAlerts }) {
       ]} />
     </PageHero>
 
-    <section className="alert-radar">
-      <div className="radar"><i /><i /><i /><b /><span /></div>
-      <div>
-        <SectionLabel icon={<Bell size={15} />}>PRIORITY RADAR</SectionLabel>
-        <h2>Station safety notifications.</h2>
-        <p>Only meaningful station events and risk thresholds are promoted to the operator layer.</p>
-      </div>
-      <div className="radar-status">
-        <span><i /> MONITORING</span>
-        <span>{alertList.length} ACTIVE ALERTS</span>
+    <section className="alerts-monitor-row">
+      <div className="panel warm-panel monitor-card">
+        <PanelHeader title="LIVE MONITORING" subtitle="Priority radar" icon={<Radio size={16} />} />
+        <div className="monitor-card-body">
+          <div className="radar"><i /><i /><i /><b /><span /></div>
+          <div className="radar-status">
+            <span><i /> MONITORING</span>
+            <span>{alertList.length} ACTIVE ALERTS</span>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section className="two-col warm-two-col">
-      <div className="panel warm-panel">
-        <PanelHeader title="ACTIVE STATION ALERTS" subtitle="Live priority queue" icon={<Bell size={16} />} />
-        {alertList.map(a => (
-          <AlertCard
-            key={a.id}
-            severity={a.severity}
-            title={a.title}
-            body={a.body}
-            time={a.timestamp}
-            onClick={() => setToast({ type: a.severity === 'danger' ? 'error' : (a.severity === 'warning' ? 'warning' : 'info'), text: `Action recommended: ${a.action}` })}
-          />
-        ))}
+    <section className="two-col warm-two-col alerts-main-grid">
+      <div className="panel warm-panel alerts-list-panel">
+        <PanelHeader
+          title="ACTIVE STATION ALERTS"
+          subtitle="Live priority queue"
+          icon={<Bell size={16} />}
+          action={
+            <div className="alert-filter-chips">
+              {ALERT_FILTERS.map(f => (
+                <button
+                  key={f.key}
+                  className={filter === f.key ? 'selected' : ''}
+                  onClick={() => setFilter(f.key)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          }
+        />
+        {filteredAlerts.length > 0 ? (
+          filteredAlerts.map(a => (
+            <AlertCard
+              key={a.id}
+              severity={a.severity}
+              title={a.title}
+              body={a.body}
+              time={a.timestamp}
+              onClick={() => setToast({ type: a.severity === 'danger' ? 'error' : (a.severity === 'warning' ? 'warning' : 'info'), text: `Action recommended: ${a.action}` })}
+            />
+          ))
+        ) : (
+          <div className="alerts-empty-state">
+            <ShieldCheck size={28} />
+            <strong>No alerts in this category</strong>
+            <span>All station subsystems are operating within nominal parameters.</span>
+          </div>
+        )}
       </div>
       <div className="panel warm-panel">
         <PanelHeader title="EVENT TIMELINE" subtitle="Latest station activity" icon={<Bell size={16} />} />
